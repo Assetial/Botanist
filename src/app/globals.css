@@ -1,0 +1,89 @@
+@import "tailwindcss";
+
+:root {
+  --color-page: #fdfaf3;
+  --color-page-alt: #e8f4e7;
+  --color-card: #fffdf8;
+  --color-ink: #27221b;
+  --color-muted: #5c564b;
+  --color-brand: #1f7a4f;
+  --font-display: "Palatino Linotype", "Book Antiqua", Palatino, serif;
+  --font-sans: "Trebuchet MS", "Segoe UI", Tahoma, Arial, sans-serif;
+}
+
+@theme inline {
+  --font-display: var(--font-display);
+  --font-sans: var(--font-sans);
+  --color-background: var(--color-page);
+  --color-foreground: var(--color-ink);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: radial-gradient(circle at 10% 10%, #f8fff2 0%, transparent 35%),
+    radial-gradient(circle at 90% 15%, #e4f7dc 0%, transparent 30%),
+    linear-gradient(170deg, var(--color-page) 0%, var(--color-page-alt) 100%);
+  color: var(--color-ink);
+}
+
+.bg-app {
+  background: transparent;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  color: #1e4d36;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+.card {
+  border: 1px solid rgba(48, 122, 84, 0.15);
+  background: var(--color-card);
+  border-radius: 1.25rem;
+  box-shadow: 0 10px 28px rgba(32, 85, 56, 0.08);
+}
+
+.field-label {
+  display: block;
+  font-size: 0.875rem;
+  color: var(--color-muted);
+  margin-bottom: 0.35rem;
+}
+
+.input {
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(54, 97, 74, 0.25);
+  background: #fff;
+  padding: 0.68rem 0.78rem;
+  color: #1b2e22;
+}
+
+.input:focus {
+  outline: 2px solid rgba(32, 128, 77, 0.28);
+  outline-offset: 1px;
+}
+
+textarea.input {
+  min-height: 4.5rem;
+  resize: vertical;
+}
