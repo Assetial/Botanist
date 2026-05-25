@@ -14,6 +14,9 @@ export const PRIVATE_API_PREFIXES = [
   "/api/photos",
   "/api/reviews",
   "/api/care",
+  "/api/care-tasks",
+  "/api/care-logs",
+  "/api/milestones",
 ];
 
 export const PUBLIC_BYPASS_PATHS = [

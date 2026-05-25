@@ -1,3 +1,5 @@
+import "server-only";
+
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import {
   getSupabaseServiceRoleKey,
@@ -23,6 +25,7 @@ export function getSupabaseAdminClient(): SupabaseClient | null {
     return null;
   }
 
+  // Service role key is server-only and never shipped to the browser.
   cachedAdminClient = createClient(url, serviceRole, {
     auth: {
       persistSession: false,

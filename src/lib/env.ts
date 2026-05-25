@@ -44,12 +44,12 @@ export function getShareToken(): string {
   return process.env.BOTANIST_SHARE_TOKEN?.trim() || "family-read-only";
 }
 
-export function isAiKeyConfigured(provider: "openai" | "anthropic"): boolean {
-  if (provider === "openai") {
-    return Boolean(process.env.OPENAI_API_KEY?.trim());
-  }
+export function hasOpenAiApiKey(): boolean {
+  return Boolean(process.env.OPENAI_API_KEY?.trim());
+}
 
-  return Boolean(process.env.ANTHROPIC_API_KEY?.trim());
+export function isRealAiEnabled(): boolean {
+  return parseBoolean(process.env.BOTANIST_ENABLE_REAL_AI, false);
 }
 
 export function getSiteUrl(): string {

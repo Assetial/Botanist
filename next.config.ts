@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  distDir: ".botanist-next-v4",
+  distDir: ".botanist-next-v5",
   images: {
     remotePatterns: [
       {

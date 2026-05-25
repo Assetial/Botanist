@@ -18,23 +18,32 @@ export default async function PhotoDetailPage({ params }: PhotoDetailPageProps) 
   }
 
   const { plant, photo, reviews } = data;
+  const takenAtLabel = formatDateTime(photo.taken_at || photo.uploaded_at);
 
   return (
     <div className="space-y-5">
       <header className="card space-y-2 p-5">
         <Link href={`/plants/${plant.id}`} className="text-sm font-semibold text-emerald-700 hover:underline">
-          ? Back to {plant.nickname}
+          Back to {plant.nickname}
         </Link>
         <h1 className="text-3xl">Photo Review History</h1>
         <p className="text-sm text-stone-600">
-          Uploaded {formatDateTime(photo.uploaded_at)} · Taken {formatDateTime(photo.taken_at)}
+          Uploaded {formatDateTime(photo.uploaded_at)} | Taken {takenAtLabel}
+          {photo.taken_at ? "" : " (fallback to upload time)"}
         </p>
         <p className="text-sm text-stone-700">{photo.notes || "No photo notes saved."}</p>
       </header>
 
       <section className="card overflow-hidden">
         <div className="relative h-72 w-full bg-emerald-100">
-          <Image src={photo.image_url} alt={`${plant.nickname} photo`} fill className="object-cover" unoptimized={photo.image_url.startsWith("data:")} sizes="100vw" />
+          <Image
+            src={photo.image_url}
+            alt={`${plant.nickname} photo`}
+            fill
+            className="object-cover"
+            unoptimized={photo.image_url.startsWith("data:")}
+            sizes="100vw"
+          />
         </div>
         <div className="p-4">
           <RefreshReviewButton plantId={plant.id} photoId={photo.id} />
@@ -52,7 +61,7 @@ export default async function PhotoDetailPage({ params }: PhotoDetailPageProps) 
             <article key={review.id} className="card space-y-2 p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="text-lg capitalize">
-                  {review.provider} · {review.model_name}
+                  {review.provider} | {review.model_name}
                 </h3>
                 <span className={`rounded-full px-3 py-1 text-sm font-semibold ${scoreClass(review.health_score)}`}>
                   {review.health_score}/100
@@ -61,9 +70,8 @@ export default async function PhotoDetailPage({ params }: PhotoDetailPageProps) 
               <p className="text-sm text-stone-600">Reviewed {formatDateTime(review.reviewed_at)}</p>
               <p className="text-sm text-stone-700">{review.visible_condition_summary}</p>
               <p className="text-sm text-stone-700">
-                <span className="font-semibold">Confidence:</span>{" "}
-                {Math.round(review.identification_confidence * 100)}% · <span className="font-semibold">Plant:</span>{" "}
-                {review.plant_identification}
+                <span className="font-semibold">Confidence:</span> {Math.round(review.identification_confidence * 100)}% |{" "}
+                <span className="font-semibold">Plant:</span> {review.plant_identification}
               </p>
               <p className="text-sm text-stone-700">
                 <span className="font-semibold">Risks:</span> Water {riskLabel(review.watering_risk)}, Light {riskLabel(review.light_risk)}, Pest {riskLabel(review.pest_risk)}, Disease {riskLabel(review.disease_risk)}

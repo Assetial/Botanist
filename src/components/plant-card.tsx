@@ -16,7 +16,9 @@ export function PlantCard({ card }: PlantCardProps) {
         {plant.cover_photo_url ? (
           <Image src={plant.cover_photo_url} alt={plant.nickname} fill className="object-cover" sizes="100vw" />
         ) : (
-          <div className="flex h-full items-center justify-center bg-emerald-100 text-4xl">??</div>
+          <div className="flex h-full items-center justify-center bg-emerald-100 text-center text-sm text-stone-600">
+            No photo
+          </div>
         )}
       </div>
       <div className="space-y-3 p-4">

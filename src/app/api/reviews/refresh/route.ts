@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { refreshMockReviews } from "@/lib/data";
+import { refreshBotanistReviews } from "@/lib/data";
+import { requireOwnerSession } from "@/lib/server/owner-session";
 
 export async function POST(request: NextRequest) {
   try {
+    // Write protection: refreshing reviews inserts new ai_reviews rows and requires owner session.
+    const unauthorizedResponse = await requireOwnerSession(request);
+    if (unauthorizedResponse) {
+      return unauthorizedResponse;
+    }
+
     const body = (await request.json()) as { plantId?: string; photoId?: string };
     const plantId = body.plantId?.trim();
     const photoId = body.photoId?.trim();
@@ -14,7 +21,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await refreshMockReviews(plantId, photoId);
+    const result = await refreshBotanistReviews(plantId, photoId);
 
     return NextResponse.json({
       mode: result.mode,
@@ -27,9 +34,19 @@ export async function POST(request: NextRequest) {
       reviews: result.reviews,
     });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unable to refresh reviews." },
-      { status: 500 },
-    );
+    if (error instanceof Error) {
+      if (error.message === "Plant not found.") {
+        return NextResponse.json({ error: "Plant not found." }, { status: 404 });
+      }
+
+      if (error.message === "Photo not found for this plant.") {
+        return NextResponse.json(
+          { error: "Upload a plant photo before refreshing Botanist Agent reviews." },
+          { status: 404 },
+        );
+      }
+    }
+
+    return NextResponse.json({ error: "Unable to refresh reviews." }, { status: 500 });
   }
 }

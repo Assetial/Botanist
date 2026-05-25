@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { updatePlant } from "@/lib/data";
+import { requireOwnerSession } from "@/lib/server/owner-session";
 
 interface Context {
   params: Promise<{ id: string }>;
@@ -7,6 +8,12 @@ interface Context {
 
 export async function PUT(request: NextRequest, context: Context) {
   try {
+    // Write protection: editing plants requires a valid owner session.
+    const unauthorizedResponse = await requireOwnerSession(request);
+    if (unauthorizedResponse) {
+      return unauthorizedResponse;
+    }
+
     const { id } = await context.params;
 
     const body = (await request.json()) as {
@@ -32,9 +39,7 @@ export async function PUT(request: NextRequest, context: Context) {
 
     return NextResponse.json({ plant });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unable to update plant." },
-      { status: 500 },
-    );
+    void error;
+    return NextResponse.json({ error: "Unable to update plant." }, { status: 500 });
   }
 }

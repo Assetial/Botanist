@@ -33,8 +33,8 @@
     "**/*.ts",
     "**/*.tsx",
     "**/*.mts",
-    ".botanist-next-v4/types/**/*.ts",
-    ".botanist-next-v4/dev/types/**/*.ts"
+    ".botanist-next-v5/types/**/*.ts",
+    ".botanist-next-v5/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

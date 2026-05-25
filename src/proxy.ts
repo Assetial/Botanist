@@ -50,6 +50,7 @@ function isPrivatePath(pathname: string): boolean {
 export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
+  // Share routes and unlock routes intentionally bypass owner checks for read-only/public access.
   if (isStaticAsset(pathname) || isBypassedPath(pathname) || !isPrivatePath(pathname)) {
     return NextResponse.next();
   }
@@ -62,6 +63,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // API requests get a strict 401 instead of redirect; write routes also re-check in each handler.
   if (pathname.startsWith("/api/")) {
     return NextResponse.json({ error: "Owner passcode required." }, { status: 401 });
   }

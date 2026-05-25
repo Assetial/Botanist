@@ -1,7 +1,12 @@
-import { getPhotoBucket, isSupabaseConfigured } from "@/lib/env";
+import {
+  getPhotoBucket,
+  isRealAiEnabled,
+  isSupabaseConfigured,
+} from "@/lib/env";
 import { getMemoryStore } from "@/lib/store";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 import { generateMockReviewSet } from "@/lib/review-generator";
+import { getAnthropicApiKey, hasAnthropicApiKeyConfigured } from "@/lib/server/anthropic";
 import type {
   AiReview,
   CareLog,
@@ -636,10 +641,30 @@ export async function saveAiReviews(reviews: AiReview[]): Promise<AiReview[]> {
   return (result.data ?? []) as AiReview[];
 }
 
-export async function refreshMockReviews(
+function generateRealAiReadyReviewSet(plant: Plant, photo: PlantPhoto): AiReview[] {
+  // This server-only helper verifies Claude credentials without making paid API calls in v1.
+  void getAnthropicApiKey();
+
+  const reviews = generateMockReviewSet(plant, photo);
+
+  return reviews.map((review) => {
+    if (review.provider !== "anthropic") {
+      return review;
+    }
+
+    return {
+      ...review,
+      model_name: "claude-ready-placeholder-v1",
+      raw_response:
+        "Real AI mode flag is enabled, but v1.1 still uses mock output until the paid provider adapter is implemented.",
+    };
+  });
+}
+
+export async function refreshBotanistReviews(
   plantId: string,
   photoId: string,
-): Promise<{ reviews: AiReview[]; mode: "mock" | "live" }> {
+): Promise<{ reviews: AiReview[]; mode: "mock" | "real-ai-ready" }> {
   const plant = await getPlantById(plantId);
   if (!plant) {
     throw new Error("Plant not found.");
@@ -669,9 +694,15 @@ export async function refreshMockReviews(
     throw new Error("Photo not found for this plant.");
   }
 
-  const reviews = generateMockReviewSet(plant, photo);
+  const shouldUseRealAiPath = isRealAiEnabled() && hasAnthropicApiKeyConfigured();
+
+  const reviews = shouldUseRealAiPath
+    ? generateRealAiReadyReviewSet(plant, photo)
+    : generateMockReviewSet(plant, photo);
+
   const saved = await saveAiReviews(reviews);
-  return { reviews: saved, mode: "mock" };
+
+  return { reviews: saved, mode: shouldUseRealAiPath ? "real-ai-ready" : "mock" };
 }
 
 export function getPhotosBucketName(): string {

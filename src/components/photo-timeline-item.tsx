@@ -13,6 +13,7 @@ export function PhotoTimelineItem({ plantId, photo, reviews }: PhotoTimelineItem
   const latestConsensus = reviews
     .filter((review) => review.provider === "consensus")
     .sort((a, b) => (a.reviewed_at < b.reviewed_at ? 1 : -1))[0];
+  const takenAtLabel = formatDateTime(photo.taken_at || photo.uploaded_at);
 
   return (
     <article className="card overflow-hidden">
@@ -21,6 +22,10 @@ export function PhotoTimelineItem({ plantId, photo, reviews }: PhotoTimelineItem
       </div>
       <div className="space-y-2 p-4">
         <p className="text-sm text-stone-600">Uploaded: {formatDateTime(photo.uploaded_at)}</p>
+        <p className="text-sm text-stone-600">
+          Taken: {takenAtLabel}
+          {photo.taken_at ? "" : " (fallback to upload time)"}
+        </p>
         <p className="text-sm text-stone-700">{photo.notes || "No notes attached."}</p>
 
         {latestConsensus ? (

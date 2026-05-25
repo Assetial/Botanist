@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createPhoto, uploadPhotoToStorage } from "@/lib/data";
+import { requireOwnerSession } from "@/lib/server/owner-session";
 
 export async function POST(request: NextRequest) {
   try {
+    // Write protection: uploading photos requires a valid owner session.
+    const unauthorizedResponse = await requireOwnerSession(request);
+    if (unauthorizedResponse) {
+      return unauthorizedResponse;
+    }
+
     const formData = await request.formData();
 
     const file = formData.get("file");
@@ -30,9 +37,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ photo }, { status: 201 });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unable to upload photo." },
-      { status: 500 },
-    );
+    void error;
+    return NextResponse.json({ error: "Unable to upload photo." }, { status: 500 });
   }
 }

@@ -19,7 +19,16 @@ export default async function PlantDetailPage({ params }: PlantDetailPageProps) 
     notFound();
   }
 
-  const { plant, photos, reviews, upcomingTasks, careLogs, milestones, latestReviewsByProvider, healthReports } = bundle;
+  const {
+    plant,
+    photos,
+    reviews,
+    upcomingTasks,
+    careLogs,
+    milestones,
+    latestReviewsByProvider,
+    healthReports,
+  } = bundle;
   const currentPhoto = photos[0] ?? null;
 
   return (
@@ -29,7 +38,9 @@ export default async function PlantDetailPage({ params }: PlantDetailPageProps) 
           {plant.cover_photo_url ? (
             <Image src={plant.cover_photo_url} alt={plant.nickname} fill className="object-cover" sizes="100vw" />
           ) : (
-            <div className="flex h-full items-center justify-center text-6xl">??</div>
+            <div className="flex h-full items-center justify-center text-center text-sm text-stone-600">
+              No cover photo yet
+            </div>
           )}
         </div>
         <div className="space-y-3 p-5">
@@ -37,7 +48,7 @@ export default async function PlantDetailPage({ params }: PlantDetailPageProps) 
             <div>
               <h1 className="text-4xl">{plant.nickname}</h1>
               <p className="text-sm text-stone-600">
-                {plant.common_name} · {plant.species}
+                {plant.common_name} | {plant.species}
               </p>
             </div>
             <span className={`rounded-full px-4 py-2 text-sm font-semibold ${scoreClass(plant.current_health_score)}`}>
@@ -78,7 +89,7 @@ export default async function PlantDetailPage({ params }: PlantDetailPageProps) 
         </p>
         {!currentPhoto ? (
           <div className="card p-4 text-sm text-stone-600">
-            Upload a photo to activate Botanist Agent Review cards.
+            Upload a plant photo before refreshing Botanist Agent reviews.
           </div>
         ) : null}
         <div className="grid gap-3 lg:grid-cols-3">
@@ -148,7 +159,7 @@ export default async function PlantDetailPage({ params }: PlantDetailPageProps) 
               {healthReports.slice(0, 6).map((report) => (
                 <li key={report.id} className="rounded-xl bg-stone-100 px-3 py-2">
                   <p className="font-semibold">
-                    Score {report.health_score} · {formatDateTime(report.created_at)}
+                    Score {report.health_score} | {formatDateTime(report.created_at)}
                   </p>
                   <p>{report.summary}</p>
                   <p className="text-xs text-stone-600">
@@ -171,7 +182,7 @@ export default async function PlantDetailPage({ params }: PlantDetailPageProps) 
                 <ul className="space-y-2 text-sm text-stone-700">
                   {careLogs.slice(0, 4).map((log) => (
                     <li key={log.id} className="rounded-xl bg-stone-100 px-3 py-2">
-                      {log.task_type.replace("_", " ")} · {formatDate(log.completed_at)} · {log.notes}
+                      {log.task_type.replace("_", " ")} | {formatDate(log.completed_at)} | {log.notes}
                     </li>
                   ))}
                 </ul>

@@ -1,12 +1,15 @@
 import Link from "next/link";
 import { PlantCard } from "@/components/plant-card";
-import { getShareToken, isShareEnabled } from "@/lib/env";
+import { getShareToken, isRealAiEnabled, isShareEnabled } from "@/lib/env";
 import { hasSupabaseConfig, listDashboardPlantCards } from "@/lib/data";
+import { hasAnthropicApiKeyConfigured } from "@/lib/server/anthropic";
 
 export default async function DashboardPage() {
   const cards = await listDashboardPlantCards();
   const shareEnabled = isShareEnabled();
   const supabaseReady = hasSupabaseConfig();
+  const realAiEnabled = isRealAiEnabled();
+  const anthKeyConfigured = hasAnthropicApiKeyConfigured();
 
   return (
     <div className="space-y-6">
@@ -51,8 +54,25 @@ export default async function DashboardPage() {
               Open share view
             </Link>
           ) : null}
+          <span
+            className={`rounded-full px-3 py-1 ${realAiEnabled && anthKeyConfigured ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"}`}
+          >
+            Botanist Agent mode: {realAiEnabled && anthKeyConfigured ? "real-ai-ready (mock output in v1.1)" : "mock"}
+          </span>
         </div>
       </section>
+
+      {!supabaseReady ? (
+        <section className="card space-y-2 p-5">
+          <h2 className="text-2xl">Setup Guidance</h2>
+          <p className="text-sm text-stone-700">
+            Botanist is running in demo mode because Supabase environment variables are missing.
+          </p>
+          <p className="text-sm text-stone-700">
+            Add your Supabase values in `.env.local`, then run `database/schema.sql` and `database/seed.sql`.
+          </p>
+        </section>
+      ) : null}
 
       {cards.length === 0 ? (
         <section className="card p-8 text-center">

@@ -1,5 +1,4 @@
 import Image from "next/image";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { listPublicMilestones, listSharePlants } from "@/lib/data";
 import { getShareToken, isShareEnabled } from "@/lib/env";
@@ -32,13 +31,10 @@ export default async function SharePage({ params }: SharePageProps) {
   return (
     <div className="space-y-5">
       <header className="card space-y-3 p-5">
-        <h1 className="text-4xl">Family & Friends Plant View</h1>
+        <h1 className="text-4xl">Family and Friends Plant View</h1>
         <p className="text-sm text-stone-600">
           Read-only gallery. Private owner notes are hidden.
         </p>
-        <Link href="/owner/unlock" className="text-sm font-semibold text-emerald-700 hover:underline">
-          Owner access
-        </Link>
       </header>
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -48,7 +44,9 @@ export default async function SharePage({ params }: SharePageProps) {
               {card.plant.cover_photo_url ? (
                 <Image src={card.plant.cover_photo_url} alt={card.plant.nickname} fill className="object-cover" sizes="100vw" />
               ) : (
-                <div className="flex h-full items-center justify-center text-5xl">??</div>
+                <div className="flex h-full items-center justify-center text-center text-sm text-stone-600">
+                  No photo
+                </div>
               )}
             </div>
             <div className="space-y-2 p-4">
@@ -64,7 +62,7 @@ export default async function SharePage({ params }: SharePageProps) {
       </section>
 
       <section className="card p-5">
-        <h2 className="text-2xl">Plant Stories & Milestones</h2>
+        <h2 className="text-2xl">Plant Stories and Milestones</h2>
         {milestones.length === 0 ? (
           <p className="mt-2 text-sm text-stone-600">No public milestones yet.</p>
         ) : (

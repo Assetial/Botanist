@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createPlant } from "@/lib/data";
+import { requireOwnerSession } from "@/lib/server/owner-session";
 
 export async function POST(request: NextRequest) {
   try {
+    // Write protection: creating plants requires a valid owner session.
+    const unauthorizedResponse = await requireOwnerSession(request);
+    if (unauthorizedResponse) {
+      return unauthorizedResponse;
+    }
+
     const body = (await request.json()) as {
       nickname: string;
       common_name: string;
@@ -28,9 +35,7 @@ export async function POST(request: NextRequest) {
     const plant = await createPlant(body);
     return NextResponse.json({ plant }, { status: 201 });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unable to create plant." },
-      { status: 500 },
-    );
+    void error;
+    return NextResponse.json({ error: "Unable to create plant." }, { status: 500 });
   }
 }

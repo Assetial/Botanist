@@ -27,7 +27,7 @@ export function ReviewCard({ title, review }: ReviewCardProps) {
 
       <div className="mt-3 space-y-2 text-sm text-stone-700">
         <p>
-          <span className="font-semibold">Provider:</span> {review.provider} · {review.model_name}
+          <span className="font-semibold">Provider:</span> {review.provider} | {review.model_name}
         </p>
         <p>
           <span className="font-semibold">Confidence:</span> {Math.round(review.identification_confidence * 100)}%
