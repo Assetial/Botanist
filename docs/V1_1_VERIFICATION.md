@@ -107,7 +107,7 @@ Expected result: all three review surfaces are visible and stable in v1.1 demo m
 
 ## 12) Check share page is read-only
 
-1. Open a share route (`/share/:token`).
+1. Open the app's configured share route (implemented here as `/share/:token`). Depending on implementation in other deployments, this may be `/share` or a tokenized share URL.
 2. Confirm plant information is viewable.
 3. Confirm owner-only edit/create actions are not available on share view.
 
