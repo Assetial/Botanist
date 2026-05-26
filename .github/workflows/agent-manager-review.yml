@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
   pull-requests: write
 
 jobs:
@@ -26,6 +27,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Lint
+        run: npm run lint --if-present
 
       - name: Build
         run: npm run build
@@ -55,7 +59,7 @@ jobs:
 
           if git diff "$base_ref" "$head_ref" -- .env.example | grep -Eq '^\+.*BOTANIST_ENABLE_REAL_AI\s*=\s*true'; then
             verdict="AGENT REJECTED"
-            reasons+=("`BOTANIST_ENABLE_REAL_AI=true` was introduced.")
+            reasons+=("BOTANIST_ENABLE_REAL_AI=true was introduced.")
           fi
 
           if git diff "$base_ref" "$head_ref" -- src/lib/env.ts README.md | grep -Eq '^\+.*BOTANIST_ENABLE_REAL_AI\s*=\s*true'; then
@@ -68,9 +72,21 @@ jobs:
             reasons+=("Possible paid AI API behavior was added or changed.")
           fi
 
-          if git diff "$base_ref" "$head_ref" | grep -Eiq '(api[_-]?key|secret|token|password|private[_-]?key|BEGIN [A-Z ]*PRIVATE KEY)'; then
-            verdict="AGENT REJECTED"
-            reasons+=("Potential secret-like content detected in committed changes.")
+          scan_paths=()
+          while IFS= read -r file; do
+            [ -n "$file" ] || continue
+            # Avoid self-scan false positives: this workflow contains the scanner keywords by design.
+            if [ "$file" = ".github/workflows/agent-manager-review.yml" ]; then
+              continue
+            fi
+            scan_paths+=("$file")
+          done < changed_files.txt
+
+          if [ "${#scan_paths[@]}" -gt 0 ]; then
+            if git diff -U0 "$base_ref" "$head_ref" -- "${scan_paths[@]}" | grep -E '^\+' | grep -Ev '^\+\+\+' | grep -Eiq '(api[_-]?key|secret|token|password|private[_-]?key|BEGIN [A-Z ]*PRIVATE KEY)'; then
+              verdict="AGENT REJECTED"
+              reasons+=("Potential secret-like content detected in committed additions.")
+            fi
           fi
 
           if grep -Eq '^(database/|src/lib/server/owner-session\.ts|src/app/api/owner/unlock/route\.ts)' changed_files.txt; then
