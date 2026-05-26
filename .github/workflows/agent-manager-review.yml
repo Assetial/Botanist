@@ -1,0 +1,165 @@
+name: Agent Manager Review
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint --if-present
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm test --if-present
+
+      - name: Safety scan and decision
+        id: decision
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          base_ref="${{ github.event.pull_request.base.sha || github.sha }}"
+          head_ref="${{ github.event.pull_request.head.sha || github.sha }}"
+
+          git diff --name-only "$base_ref" "$head_ref" > changed_files.txt
+          changed_count=$(wc -l < changed_files.txt | tr -d ' ')
+
+          verdict="AGENT APPROVED"
+          reasons=()
+
+          if [ "$changed_count" -gt 20 ]; then
+            verdict="HUMAN NEEDED"
+            reasons+=("PR appears large ($changed_count files changed).")
+          fi
+
+          if git diff "$base_ref" "$head_ref" -- .env.example | grep -Eq '^\+.*BOTANIST_ENABLE_REAL_AI\s*=\s*true'; then
+            verdict="AGENT REJECTED"
+            reasons+=("BOTANIST_ENABLE_REAL_AI=true was introduced.")
+          fi
+
+          if git diff "$base_ref" "$head_ref" -- src/lib/env.ts README.md | grep -Eq '^\+.*BOTANIST_ENABLE_REAL_AI\s*=\s*true'; then
+            verdict="AGENT REJECTED"
+            reasons+=("Real AI was enabled in config or docs defaults.")
+          fi
+
+          if git diff "$base_ref" "$head_ref" -- src | grep -Eiq 'openai\.|anthropic\.|https://api\.openai\.com|https://api\.anthropic\.com'; then
+            verdict="AGENT REJECTED"
+            reasons+=("Possible paid AI API behavior was added or changed.")
+          fi
+
+          scan_paths=()
+          while IFS= read -r file; do
+            [ -n "$file" ] || continue
+            # Avoid self-scan false positives: this workflow contains the scanner keywords by design.
+            if [ "$file" = ".github/workflows/agent-manager-review.yml" ]; then
+              continue
+            fi
+            scan_paths+=("$file")
+          done < changed_files.txt
+
+          if [ "${#scan_paths[@]}" -gt 0 ]; then
+            if git diff -U0 "$base_ref" "$head_ref" -- "${scan_paths[@]}" | grep -E '^\+' | grep -Ev '^\+\+\+' | grep -Eiq '(api[_-]?key|secret|token|password|private[_-]?key|BEGIN [A-Z ]*PRIVATE KEY)'; then
+              verdict="AGENT REJECTED"
+              reasons+=("Potential secret-like content detected in committed additions.")
+            fi
+          fi
+
+          if grep -Eq '^(database/|src/lib/server/owner-session\.ts|src/app/api/owner/unlock/route\.ts)' changed_files.txt; then
+            if [ "$verdict" = "AGENT APPROVED" ]; then
+              verdict="HUMAN NEEDED"
+              reasons+=("Auth or database-related files changed and need owner review.")
+            fi
+          fi
+
+          if [ ${#reasons[@]} -eq 0 ]; then
+            reasons+=("All required checks passed and no safety violations were detected.")
+          fi
+
+          {
+            echo "verdict=$verdict"
+            printf 'comment<<EOF\n'
+            echo "## $verdict"
+            echo
+            echo "### Summary"
+            for reason in "${reasons[@]}"; do
+              echo "- $reason"
+            done
+            echo
+            echo "### Labels"
+            echo "- agent-review"
+            echo "- $(echo "$verdict" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')"
+            if [ "$verdict" = "AGENT APPROVED" ]; then
+              echo "- safe-to-merge"
+            elif [ "$verdict" = "AGENT REJECTED" ]; then
+              echo "- codex-fix-needed"
+            else
+              echo "- human-needed"
+            fi
+            echo
+            echo "If these labels do not exist yet, create them manually in repository settings."
+            printf 'EOF\n'
+          } >> "$GITHUB_OUTPUT"
+
+          if [ "$verdict" = "AGENT REJECTED" ]; then
+            exit 1
+          fi
+
+      - name: Upsert single PR comment
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const marker = '<!-- botanist-agent-manager-review -->';
+            const body = `${marker}\n${{ toJson(steps.decision.outputs.comment) }}`;
+            const { owner, repo } = context.repo;
+            const issue_number = context.payload.pull_request.number;
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number,
+              per_page: 100,
+            });
+
+            const existing = comments.find((c) => c.body && c.body.includes(marker));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body,
+              });
+            }
