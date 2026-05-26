@@ -107,11 +107,23 @@ Expected result: all three review surfaces are visible and stable in v1.1 demo m
 
 ## 12) Check share page is read-only
 
-1. Open the app's configured share route (implemented here as `/share/:token`). Depending on implementation in other deployments, this may be `/share` or a tokenized share URL.
-2. Confirm plant information is viewable.
-3. Confirm owner-only edit/create actions are not available on share view.
+### Default behavior (share disabled)
 
-Expected result: share page supports read-only viewing only.
+1. Run with `BOTANIST_ENABLE_SHARE=false` (default behavior in v1.1).
+2. Open the configured share route.
+3. Confirm the UI shows a "Share view is disabled" style message.
+
+Expected result: disabled-share messaging is expected by default and should **not** be treated as a test failure.
+
+### Enabled share behavior
+
+1. Set `BOTANIST_ENABLE_SHARE=true`.
+2. Set `BOTANIST_SHARE_TOKEN` to a known local test token.
+3. Open the configured tokenized share route using that token (implemented here as `/share/:token`; other deployments may use a different tokenized share URL).
+4. Confirm plant information is viewable.
+5. Confirm owner-only edit/create/upload/review actions are not available on share view.
+
+Expected result: share page supports read-only viewing only when share mode is enabled and a valid tokenized route is used.
 
 ## 13) Confirm real AI is disabled by default
 
