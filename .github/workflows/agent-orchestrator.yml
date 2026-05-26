@@ -1,0 +1,131 @@
+name: Agent Orchestrator (Safe Skeleton)
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  orchestrate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run lint/build/test checks (where available)
+        id: project_checks
+        shell: bash
+        run: |
+          set +e
+          status=approved
+
+          if npm run | grep -qE '^  lint$'; then
+            npm run lint
+            lint_code=$?
+          else
+            lint_code=0
+          fi
+
+          if npm run | grep -qE '^  build$'; then
+            npm run build
+            build_code=$?
+          else
+            build_code=0
+          fi
+
+          if npm run | grep -qE '^  test$'; then
+            npm test
+            test_code=$?
+          else
+            test_code=0
+          fi
+
+          if [ "$lint_code" -ne 0 ] || [ "$build_code" -ne 0 ] || [ "$test_code" -ne 0 ]; then
+            status=rejected
+          fi
+
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+
+      - name: Run safety scan on changed files
+        id: safety_scan
+        shell: bash
+        run: |
+          bash scripts/agent-orchestrator/safety-scan.sh
+
+      - name: Decide outcome
+        id: decide
+        shell: bash
+        run: |
+          decision="AGENT APPROVED"
+
+          if [ "${{ steps.project_checks.outputs.status }}" = "rejected" ] || [ "${{ steps.safety_scan.outputs.status }}" = "rejected" ]; then
+            decision="AGENT REJECTED"
+          elif [ "${{ steps.safety_scan.outputs.status }}" = "human_needed" ]; then
+            decision="HUMAN NEEDED"
+          fi
+
+          echo "decision=$decision" >> "$GITHUB_OUTPUT"
+
+      - name: Write workflow summary
+        run: |
+          {
+            echo "## Agent orchestrator result"
+            echo
+            echo "**${{ steps.decide.outputs.decision }}**"
+            echo
+            echo "### Signals"
+            echo "- Project checks: ${{ steps.project_checks.outputs.status }}"
+            echo "- Safety scan: ${{ steps.safety_scan.outputs.status }}"
+            if [ -n "${{ steps.safety_scan.outputs.reasons }}" ]; then
+              echo "- Safety reasons: ${{ steps.safety_scan.outputs.reasons }}"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Comment on pull request
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const decision = `${{ steps.decide.outputs.decision }}`;
+            const checks = `${{ steps.project_checks.outputs.status }}`;
+            const safety = `${{ steps.safety_scan.outputs.status }}`;
+            const reasons = `${{ steps.safety_scan.outputs.reasons }}`;
+
+            const body = [
+              '## Agent orchestrator result',
+              '',
+              `**${decision}**`,
+              '',
+              `- Project checks: ${checks}`,
+              `- Safety scan: ${safety}`,
+              reasons ? `- Safety reasons: ${reasons}` : null,
+            ].filter(Boolean).join('\n');
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body,
+            });
+
+      - name: Enforce rejection
+        if: steps.decide.outputs.decision == 'AGENT REJECTED'
+        run: |
+          echo "AGENT REJECTED"
+          exit 1
