@@ -1,0 +1,72 @@
+name: Codex Auto Merge (Approved + Safe)
+
+on:
+  pull_request_review:
+    types: [submitted]
+  pull_request:
+    types: [labeled, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: codex-auto-merge-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  enable-auto-merge:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enable auto-merge only when approved and safe
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pr = context.payload.pull_request;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            const hasSafeLabel = pr.labels.some((label) => label.name === 'safe-to-merge');
+            if (!hasSafeLabel) {
+              core.info('Skipping: safe-to-merge label not present.');
+              return;
+            }
+
+            const reviews = await github.paginate(github.rest.pulls.listReviews, {
+              owner,
+              repo,
+              pull_number: pr.number,
+              per_page: 100,
+            });
+
+            const latestByUser = new Map();
+            for (const review of reviews) {
+              latestByUser.set(review.user.login, review.state);
+            }
+            const approvedCount = [...latestByUser.values()].filter((state) => state === 'APPROVED').length;
+
+            if (approvedCount < 1) {
+              core.info('Skipping: no current approving review.');
+              return;
+            }
+
+            if (pr.auto_merge) {
+              core.info('Auto-merge already enabled.');
+              return;
+            }
+
+            const mutation = `
+              mutation EnableAutoMerge($pullRequestId: ID!) {
+                enablePullRequestAutoMerge(input: {
+                  pullRequestId: $pullRequestId,
+                  mergeMethod: SQUASH
+                }) {
+                  pullRequest { number }
+                }
+              }
+            `;
+
+            await github.graphql(mutation, { pullRequestId: pr.node_id });
+            core.info(`Enabled auto-merge for PR #${pr.number}.`);

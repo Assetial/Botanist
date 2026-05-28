@@ -1,0 +1,21 @@
+- name: codex-queued
+  color: "1d76db"
+  description: "Issue is queued for Codex implementation (manual kickoff required)."
+- name: codex-in-progress
+  color: "fbca04"
+  description: "Issue is the active Codex task. Only one issue should have this label."
+- name: codex-done
+  color: "0e8a16"
+  description: "Queue work completed and PR merged."
+- name: safe-to-merge
+  color: "0e8a16"
+  description: "Existing review workflow marked this PR safe to merge."
+- name: human-needed
+  color: "d93f0b"
+  description: "Existing review workflow requires human review or intervention."
+- name: codex-fix-needed
+  color: "b60205"
+  description: "Existing review workflow rejected this PR and requested fixes."
+- name: agent-review
+  color: "5319e7"
+  description: "PR has an automated Agent Manager review comment."

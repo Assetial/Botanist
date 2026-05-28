@@ -120,3 +120,6 @@ See [docs/QA.md](docs/QA.md).
 ## Security guide
 
 See [SECURITY.md](SECURITY.md).
+## Codex queue orchestration
+
+See [docs/CODEX_QUEUE.md](docs/CODEX_QUEUE.md) for issue queue labels, workflow behavior, and auto-merge safety gates.
