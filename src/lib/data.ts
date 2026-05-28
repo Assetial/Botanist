@@ -18,6 +18,8 @@ import type {
   PlantDetailBundle,
   PlantPhoto,
   ReviewProvider,
+  TimelineEvent,
+  TimelineEventType,
 } from "@/lib/types";
 
 export interface PlantFormInput {
@@ -33,6 +35,13 @@ export interface PlantFormInput {
   current_health_score?: number;
   is_public?: boolean;
   cover_photo_url?: string | null;
+}
+
+export interface TimelineEventInput {
+  plant_id: string;
+  event_type: TimelineEventType;
+  event_at?: string;
+  note?: string | null;
 }
 
 export interface PhotoInput {
@@ -751,4 +760,64 @@ export async function uploadPhotoToStorage(
 
 export function hasSupabaseConfig(): boolean {
   return isSupabaseConfigured();
+}
+
+
+export async function listPlantTimelineEvents(plantId: string): Promise<TimelineEvent[]> {
+  const supabase = getSupabaseAdminClient();
+
+  if (!supabase) {
+    return getMemoryStore().timelineEvents
+      .filter((event) => event.plant_id === plantId)
+      .sort((a, b) => (a.event_at < b.event_at ? 1 : -1));
+  }
+
+  const result = await supabase
+    .from("timeline_events")
+    .select("*")
+    .eq("plant_id", plantId)
+    .order("event_at", { ascending: false });
+
+  if (result.error) {
+    throw new Error(result.error.message);
+  }
+
+  return (result.data ?? []) as TimelineEvent[];
+}
+
+export async function createTimelineEvent(input: TimelineEventInput): Promise<TimelineEvent> {
+  const supabase = getSupabaseAdminClient();
+  const now = new Date().toISOString();
+
+  if (!supabase) {
+    const event: TimelineEvent = {
+      id: crypto.randomUUID(),
+      plant_id: input.plant_id,
+      event_type: input.event_type,
+      event_at: input.event_at ?? now,
+      note: input.note?.trim() || null,
+      created_at: now,
+    };
+
+    const store = getMemoryStore();
+    store.timelineEvents.unshift(event);
+    return event;
+  }
+
+  const result = await supabase
+    .from("timeline_events")
+    .insert({
+      plant_id: input.plant_id,
+      event_type: input.event_type,
+      event_at: input.event_at ?? now,
+      note: input.note?.trim() || null,
+    })
+    .select("*")
+    .single();
+
+  if (result.error) {
+    throw new Error(result.error.message);
+  }
+
+  return result.data as TimelineEvent;
 }
