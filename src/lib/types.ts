@@ -11,6 +11,18 @@ export type ReviewProvider = "openai" | "anthropic" | "consensus" | "manual";
 
 export type RiskLevel = "low" | "medium" | "high";
 
+export type TimelineEventType =
+  | "watered"
+  | "fertilized"
+  | "repotted"
+  | "rotated"
+  | "pruned"
+  | "misted"
+  | "pest_issue"
+  | "new_leaf"
+  | "note"
+  | "photo";
+
 export interface Plant {
   id: string;
   nickname: string;
@@ -131,4 +143,12 @@ export interface PlantDetailBundle {
   latestReviewsByProvider: Partial<Record<ReviewProvider, AiReview>>;
   reviews: AiReview[];
   healthReports: HealthReport[];
+}
+export interface TimelineEvent {
+  id: string;
+  plant_id: string;
+  event_type: TimelineEventType;
+  event_at: string;
+  note: string | null;
+  created_at: string;
 }

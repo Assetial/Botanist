@@ -6,6 +6,7 @@ import type {
   Milestone,
   Plant,
   PlantPhoto,
+  TimelineEvent,
 } from "@/lib/types";
 
 const now = new Date();
@@ -316,6 +317,26 @@ export const demoAiReviews: AiReview[] = [
   },
 ];
 
+
+export const demoTimelineEvents: TimelineEvent[] = [
+  {
+    id: "timeline-1",
+    plant_id: demoPlants[0].id,
+    event_type: "watered",
+    event_at: daysAgo(4),
+    note: "Watered until runoff.",
+    created_at: daysAgo(4),
+  },
+  {
+    id: "timeline-2",
+    plant_id: demoPlants[1].id,
+    event_type: "fertilized",
+    event_at: daysAgo(15),
+    note: "Used half-strength liquid feed.",
+    created_at: daysAgo(15),
+  },
+];
+
 export function cloneDemoData() {
   return {
     plants: structuredClone(demoPlants),
@@ -325,5 +346,6 @@ export function cloneDemoData() {
     milestones: structuredClone(demoMilestones),
     healthReports: structuredClone(demoHealthReports),
     aiReviews: structuredClone(demoAiReviews),
+    timelineEvents: structuredClone(demoTimelineEvents),
   };
 }

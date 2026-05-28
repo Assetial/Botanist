@@ -1,5 +1,5 @@
 import { cloneDemoData } from "@/lib/mock-data";
-import type { AiReview, CareLog, CareTask, HealthReport, Milestone, Plant, PlantPhoto } from "@/lib/types";
+import type { AiReview, CareLog, CareTask, HealthReport, Milestone, Plant, PlantPhoto, TimelineEvent } from "@/lib/types";
 
 export interface BotanistMemoryStore {
   plants: Plant[];
@@ -9,6 +9,7 @@ export interface BotanistMemoryStore {
   milestones: Milestone[];
   healthReports: HealthReport[];
   aiReviews: AiReview[];
+  timelineEvents: TimelineEvent[];
 }
 
 declare global {

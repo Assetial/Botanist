@@ -69,6 +69,15 @@ create table if not exists care_logs (
   created_at timestamptz not null default now()
 );
 
+create table if not exists timeline_events (
+  id uuid primary key default gen_random_uuid(),
+  plant_id uuid not null references plants(id) on delete cascade,
+  event_type text not null check (event_type in ('watered', 'fertilized', 'repotted', 'rotated', 'pruned', 'misted', 'pest_issue', 'new_leaf', 'note', 'photo')),
+  event_at timestamptz not null default now(),
+  note text,
+  created_at timestamptz not null default now()
+);
+
 create table if not exists milestones (
   id uuid primary key default gen_random_uuid(),
   plant_id uuid not null references plants(id) on delete cascade,
@@ -111,6 +120,7 @@ create index if not exists idx_plant_photos_plant_uploaded on plant_photos (plan
 create index if not exists idx_care_tasks_plant_due on care_tasks (plant_id, due_at asc) where completed_at is null;
 create index if not exists idx_care_logs_plant_completed on care_logs (plant_id, completed_at desc);
 create index if not exists idx_milestones_plant_date on milestones (plant_id, milestone_date desc);
+create index if not exists idx_timeline_events_plant_event_at on timeline_events (plant_id, event_at desc);
 create index if not exists idx_health_reports_plant_created on health_reports (plant_id, created_at desc);
 create index if not exists idx_ai_reviews_photo_provider_reviewed on ai_reviews (photo_id, provider, reviewed_at desc);
 create index if not exists idx_ai_reviews_plant_provider_reviewed on ai_reviews (plant_id, provider, reviewed_at desc);
