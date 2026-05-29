@@ -4,16 +4,33 @@ import { notFound } from "next/navigation";
 import { PhotoTimelineItem } from "@/components/photo-timeline-item";
 import { RefreshReviewButton } from "@/components/refresh-review-button";
 import { ReviewCard } from "@/components/review-card";
-import { getPlantDetailBundle } from "@/lib/data";
+import { getPlantDetailBundle, listPlantTimelineEvents } from "@/lib/data";
+import type { TimelineEventType } from "@/lib/types";
 import { formatDate, formatDateTime, riskLabel, scoreClass, statusLabel } from "@/lib/utils";
 
 interface PlantDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
+const timelineEventLabels: Record<TimelineEventType, string> = {
+  watered: "Watered",
+  fertilized: "Fertilized",
+  repotted: "Repotted",
+  rotated: "Rotated",
+  pruned: "Pruned",
+  misted: "Misted",
+  pest_issue: "Pest issue",
+  new_leaf: "New leaf",
+  note: "Note",
+  photo: "Photo",
+};
+
 export default async function PlantDetailPage({ params }: PlantDetailPageProps) {
   const { id } = await params;
-  const bundle = await getPlantDetailBundle(id);
+  const [bundle, timelineEvents] = await Promise.all([
+    getPlantDetailBundle(id),
+    listPlantTimelineEvents(id),
+  ]);
 
   if (!bundle) {
     notFound();
@@ -78,6 +95,36 @@ export default async function PlantDetailPage({ params }: PlantDetailPageProps) 
           </div>
         </div>
       </header>
+
+      <section className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-2xl">Care History</h2>
+            <p className="text-sm text-stone-600">Newest care timeline events for this plant.</p>
+          </div>
+        </div>
+        {timelineEvents.length === 0 ? (
+          <div className="card p-4 text-sm text-stone-600">
+            No care history yet. Quick actions are coming next.
+          </div>
+        ) : (
+          <ol className="space-y-2">
+            {timelineEvents.map((event) => (
+              <li key={event.id} className="card p-4">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <p className="text-base font-semibold text-stone-900">
+                    {timelineEventLabels[event.event_type]}
+                  </p>
+                  <time className="rounded-full bg-stone-100 px-2 py-1 text-xs text-stone-600" dateTime={event.event_at}>
+                    {formatDateTime(event.event_at)}
+                  </time>
+                </div>
+                {event.note ? <p className="mt-2 text-sm text-stone-700">{event.note}</p> : null}
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
 
       <section className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
